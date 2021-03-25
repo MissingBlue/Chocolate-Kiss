@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+	
+	<head>
+		<meta charset="utf-8">
+		<title>Options</title>
+		<link rel="stylesheet" href="css/index.css">
+		<script src="utils.js"></script>
+		<script src="custom-elements.js"></script>
+		<script src="options.js"></script>
+	</head>
+	
+	<body>
+		
+		<div id="app">
+			<section id="commands">
+				<button class="clear" type="button">Initialize</button>
+			</section>
+			<section id="work-space">
+				
+				<section id="matches">
+					<button class="pict add shrink" type="button" data-selector-name="input"></button>
+					<ul id="list" data-index="" data-indexing-target="input-node"></ul>
+				</section>
+				
+				<section id="editors" data-index="">
+					<div class="ctrl">
+						<button class="pict add shrink" type="button" data-selector-name="input"></button>
+						<button class="save-all" type="button">Save All</button>
+					</div>
+					<div id="editor-nodes" data-index=""></div>
+				</section>
+				
+			</section>
+		</div>
+		
+		<template id="radio-button"><div class="radio-node"><input type="radio"><label></label></div></template>
+		
+		<template id="input-node" data-css="css/custom-elements.css">
+			<section>
+				<section class="node">
+					<button type="button" class="pict del"></button>
+					<div class="ctrl"><div class="vmove"><button type="button" class="move pict arrow up"></button><button type="button" class="move pict arrow down"></button></div></div>
+					<!--<slot name="label"></slot>-->
+					<div class="vnode">
+						<input type="text">
+						<div class="hnode props">
+							<div class="value-node" id="all-frames-node"><label for="all-frames">All Frames</label><input type="checkbox" id="all-frames"></div>
+							<div class="value-node" id="run-node"><label for="run">Run at Document...</label><select name="run" id="run"><option value="document_start" selected>Start</option><option value="document_end">End</option><option value="document_idle">Idle</option></select>
+						</div>
+					</div>
+					<!--
+					<input type="checkbox" class="all-frames">
+					<div class="value-node" data-label="Timing"><select name="run" id="run"><option value="document_start" selected>Start</option><option value="document_end">End</option><option value="document_idle">Idle</option></select>
+					-->
+				</section>
+				<div class="codes" hidden></div>
+			</section>
+		</template>
+		<!--
+		<template id="editor-container" data-css="css/custom-elements.css">
+			<section class="container" data-index="">
+				<div class="ctrl">
+					<button type="button" class="pict del"></button>
+					<div class="vmove"><button type="button" class="move pict arrow up"></button><button type="button" class="move pict arrow down"></button></div>
+					<button class="pict add" type="button"></button>
+				</div>
+				<div class="editors"></div>
+			</section>
+		</template>
+		-->
+		<template id="editor-node" data-css="css/custom-elements.css">
+			<div>
+				<div class="ctrl">
+					<button type="button" class="pict del"></button>
+					<div class="vmove"><button type="button" class="move pict arrow up"></button><button type="button" class="move pict arrow down"></button></div>
+					<div id="type-node" class="value-node"><label for="type">Type</label><select id="type" name="type"><option value="css" selected>CSS</option><option value="js">JavaScript</option></select></div>
+					<button type="button" class="save">Save</button>
+				</div>
+				<textarea></textarea>
+			</div>
+		</template>
+		
+	</body>
+	
+</html>

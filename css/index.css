@@ -1,0 +1,108 @@
+@import url("default.css");
+
+html, body { height: 100%; }
+
+body {
+	font: normal normal normal normal 16px/1 Helvetica, Arial, "メイリオ", sans-serif;
+}
+
+#app {
+	display: flex;
+	flex-direction: column;
+}
+#commands {
+	display: flex;
+	padding: .5rem 0;
+}
+#commands button {
+	margin: 0 1rem;
+}
+
+#work-space {
+	display: flex;
+}
+#work-space > * {
+	box-sizing: border-box;
+	flex: 1 0 auto;
+}
+#matches {
+	display: flex;
+	flex: 0 1 25%;
+	flex-direction: column;
+	padding: 1rem;
+}
+#matches > ul {
+	list-style: none;
+	padding: 1rem;
+}
+#matches > ul > li {
+	align-items: center;
+	display: flex;
+}
+#matches > ul > li:not(last-child) {
+	margin: 0 0 .5rem;
+}
+#matches > ul > li > input-node {
+	flex: 1 0 auto;
+}
+input-node + * {
+	display: flex;
+}
+
+#editors {
+	border-left: 1px solid rgba(200,200,200,1);
+	flex: 1 0 auto;
+	padding: 1rem;
+}
+#editors > .ctrl {
+	align-items: center;
+	display: flex;
+}
+#editors > .ctrl > * {
+	margin-right: .4rem;
+}
+#editors > .ctrl >:not(:last-child) {
+	margin-right: .4rem;
+}
+#editors > .ctrl > .save-all {
+	flex: 1 0 auto;
+}
+
+editor-container {
+	display: none;
+}
+editor-container.selected {
+	display: block;
+}
+
+.radio-node > input {
+	
+	display: none;
+	
+}
+.radio-node > input + label {
+	
+	--bg-color: rgba(160,160,160,1);
+	--size: 1.5rem;
+	
+	align-items: center;
+	background-color: var(--bg-color);
+	background-clip: padding-box;
+	border: 5px double var(--bg-color);
+	border-radius: 40%;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+	height: var(--size);
+	width: var(--size);
+	
+}
+.radio-node > input:checked + label {
+	
+	--check-color: rgb(255,255,255);
+	--check-size: 50%;
+	--check-aa: calc(var(--check-size) + 5%);
+	
+	background-image: radial-gradient(50% 50%, var(--check-color) 0%, var(--check-color) var(--check-size), transparent var(--check-aa));
+	
+}

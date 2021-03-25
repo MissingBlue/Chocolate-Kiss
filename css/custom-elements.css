@@ -1,0 +1,79 @@
+@import url("default.css");
+
+.input-node {
+}
+.input-node > .node {
+	align-items: center;
+	display: flex;
+}
+.input-node > .node > * {
+	margin: 0 .3rem;
+}
+.input-node > :first-child {
+	margin: 0 .3rem 0 0;
+}
+.input-node input[type="text"] {
+	flex: 0 1 auto;
+}
+.input-node .props {
+	padding: .5rem;
+}
+.input-node .props > * {
+	padding: 0 .5rem;
+}
+.input-node #run-node {
+	flex: 1 0 auto;
+}
+.input-node #run {
+	width: 100%;
+}
+
+.editor-container {
+	border-radius: .3rem;
+}
+.editor-container .ctrl {
+	align-items: center;
+	display: flex;
+}
+.editor-container .ctrl > * {
+	/*margin: .4rem;*/
+}
+.editor-container .ctrl .add {
+	flex: 1 0 auto;
+}
+.editor-container .ctrl .add::before {
+	flex: 0 1 auto;
+}
+.editor-container .del, .editor-container .vmove {
+	display: none;
+}
+
+.editor-node {
+	display: flex;
+	flex-direction: column;
+	padding: 0 1rem .5rem;
+}
+.editor-node .ctrl {
+	align-items: center;
+	display: flex;
+}
+.editor-node .ctrl > * {
+	margin: .4rem;
+}
+.editor-node #type-node {
+	flex: 1 0 auto;
+}
+.editor-node #type-node select {
+	width: 100%;
+}
+.editor-node textarea {
+	box-sizing: border-box;
+	font-size: .75rem;
+	height: 8rem;
+	padding: .7rem;
+	width: 100%;
+}
+.editor-node.changed button.save {
+	--border-color: rgba(240,120,120,1);
+	color: var(--border-color);
+}
