@@ -49,9 +49,9 @@ class UFElement extends HTMLElement {
 		this.dispatchEvent(new CustomEvent('disconnected'));
 		
 	}
-	destroy() {
+	destroy(keepsElement = false) {
 		
-		this.parentElement && this.remove(),
+		keepsElement || this.parentElement && this.remove(),
 		this.clearEvents(),
 		this.clearMutationObserver(),
 		this.dispatchEvent(new CustomEvent(`${this.constructor.tagName}-destroy`));

@@ -2,7 +2,8 @@
 
 const
 
-log = console.log.bind(console, `[${browser.runtime.getManifest().short_name.toUpperCase()}]`),
+log = createLog('BG'),
+msg = createMsg('BG'),
 
 INPUT_KEYS = [ 'match', 'allFrames', 'runAt' ],
 CODE_KEYS = [ '$', 'type' ],
@@ -10,10 +11,18 @@ registry = {},
 
 // options_ui からメッセージを受信した際に実行されるコールバック関数。
 changed = storage => {
-	log('A change has been notified.', storage), registerData(storage.data);
+	
+	log('A change has been notified.', storage),
+	msg('Recieved a notification for changing data from option.'),
+	registerData(storage.data);
+	
 },
 init = storage => {
-	log('Initializing...', storage), registerData(storage.data);
+	
+	log('Initializing...', storage),
+	registerData(storage.data),
+	msg('Initialized');
+	
 },
 
 registerData = data => {
@@ -24,11 +33,18 @@ registerData = data => {
 	
 	let i,i0,i1,i2,k, datum,codes,code, reg,regDatum,regCodes,regCode;
 	
+	msg(`Register storage data. ${data.length} storage data and ${Object.keys(registry).length} registred data exists.`);
+	
 	// data 内に存在しない registry 内のデータは登録を解除した上で registry から削除する。
 	for (k in registry) {
 		i = -1;
 		while ((datum = data[++i]) && datum.uid !== k);
-		datum || registry[k].$ && (registry[k].$.unregister(), delete registry[k]);
+		datum || registry[k].$ &&
+			(
+				registry[k].$.unregister(),
+				msg([ 'A registered data was deleted for mismatch with storage data.', registry[k] ]),
+				delete registry[k]
+			);
 	}
 	
 	i = -1;
@@ -58,7 +74,13 @@ registerData = data => {
 					}
 					
 					// すべて一致した場合、既に登録されているものとして、登録処理を中止する。
-					if (!k) continue;
+					if (!k) {
+						
+						msg([ 'A content script is already registered.', datum ]);
+						
+						continue;
+						
+					}
 					
 				}
 				
@@ -71,6 +93,7 @@ registerData = data => {
 		// 送られてきたデータ内にプロパティ match が存在しない場合、registry からデータを削除した上で登録を中止する。
 		if (!(registry[datum.uid].datum = datum).match) {
 			delete registry[datum.uid];
+			msg([ 'A empty value for match exists. That data is ignored.', datum ]);
 			continue;
 		}
 		
@@ -83,15 +106,17 @@ registerData = data => {
 		
 	}
 	
+	msg(`A process for registering was finished. Registered data are now ${Object.keys(registry).length}.`);
+	
 },
 getXRegistered = (rd,reg) => {
 	
 	const xRegistered = rcs => {
 		
-		const l = rd.datum.codes.length;
+		const l = rd.datum.codes.length,
+				message = `A registration for ${unescape(rd.datum.match)} was succeeded. ${l > 1 ? `${l} codes` : 'A code'} will be run on ${rd.datum.allFrames ? 'all frames' : 'a content'} at ${rd.datum.runAt}.`;
 		
-		rd.$ = rcs,
-		log(`A registration for ${unescape(rd.datum.match)} was succeeded. ${l > 1 ? `${l} codes` : 'A code'} will be run on ${rd.datum.allFrames ? 'all frames' : 'a content'} at ${rd.datum.runAt}.`, rd,reg);
+		rd.$ = rcs, log(message, rd,reg), msg([ message, rd,reg ]);
 		
 	};
 	

@@ -22,4 +22,18 @@ uid4	= (() => {
 		
 	}
 	
-})();
+})(),
+
+// WebExtensions 用のユーティリティー
+WX_SHORT_NAME = browser.runtime.getManifest().short_name.toUpperCase(),
+
+createLog = (self, label = WX_SHORT_NAME) => console.log.bind(console, `[${label}#${self}]`),
+createOnMessage = (to, label = WX_SHORT_NAME) =>
+	
+	msg =>	msg.__MSG__ && (!msg.to || msg.to === to) &&
+					(
+						Array.isArray(msg.detail) ?	console.log(`[${label}@${msg.from}]`, ...msg.detail) :
+																console.log(`[${label}@${msg.from}]`, msg.detail)
+					),
+
+createMsg = from => (detail, to) => browser.runtime.sendMessage({ from, to, detail, __MSG__: true });

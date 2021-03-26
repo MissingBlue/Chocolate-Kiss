@@ -5,74 +5,32 @@
 		// そのため、指定したキーが存在しない場合は、空のオブジェクトが返るが、存在する場合は常に { key: value } と言う形式になり、
 		// 以下のように返されたオブジェクトから改めて値を特定する必要がある。
 		browser.storage.local.get('key').then(value => console.log(value = value.key || DEFAULT_VALUE));
-	
-	TODO
-		現在はすべてのページ読み込み毎に content_scripts を読み込んでるが、これを contentScripts に置き換える
-		https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/contentScripts
 */
 
 const storage = {}, indices = {}, data = [];
 
 (() => {
 
+
+const
+boot = () => {
+
 const
 init = () => {
-
-const
-
-xLoad = localStorage => {
 	
-	let i,i0,$, usesPresetData,datum, inputNode;
-	
-	// ローカルストレージの正規化
-	localStorage.indices && typeof localStorage.indices === 'object' && Object.assign(indices, localStorage.indices),
-	storage.indices = indices;
-	
-	((localStorage.data && Array.isArray(localStorage.data)) ||
-		usesPresetData || (usesPresetData = !!(localStorage.data = PRESET_DATA))),
-	storage.data = Object.assign(data, localStorage.data),
-	
-	hi(storage);
-	
-	const	listedInputNodes = [],
-			hasIdx = indices.list && indices.list.length,
-			addButton = Q('#matches > button.add'),
-			indexedNodes = QQ('[data-index]');
+	let i;
 	
 	// 初期化ボタン
+	Q('#commands > button.init').addEventListener('click', initialize),
+	// クリアボタン
 	Q('#commands > button.clear').addEventListener('click', clear),
-	
-	// エディターコンテナに対するエディターの追加、削除時に処理の登録
-	(new MutationObserver(mutatedEditorNodesContainer)).observe(editorNodesContainer, { childList: true }),
 	
 	// エディター追加処理、ボタンに関するもの
 	editorAddButton.addEventListener('click', pressedAddEditorButton),
-	(new MutationObserver(inputContainerObserver)).observe(inputContainer, { childList: true }),
 	editorAddButton.disabled = true,
 	
-	// ローカルストレージに保存されていたデータに基づいて入力フォームを配置する。
-	i = -1;
-	while (datum = data[++i]) (i0 = hasIdx ? indices.list.indexOf(datum.uid) : i) === -1 ||
-		(
-			listedInputNodes[i0] = createListedInputNode(datum.uid, datum.match, addButton.dataset.selectorName),
-			datum.checked && (Q('input[type="radio"]', inputNode = listedInputNodes[i0]).checked = true)
-		);
-	inputContainer.append(...listedInputNodes),
-	inputNode &&	(
-							editorNodesContainer.dataset.index = inputNode.firstElementChild.id,
-							editorNodesContainer.append(...createEditorNodes(inputNode.firstElementChild))
-						),
-	
-	// インデックス対象のコンテナーに MutationObserver を登録。
-	i = -1;
-	while ($ = indexedNodes[++i]) indexer.observe($, indexerInit);
-	
 	// 入力フォーム追加ボタン
-	addButton.addEventListener('click', pressedAddMatchButton),
-	
-	// 現在の入力フォーム内のコードデータに MutationObserver を登録。
-	i = -1;
-	while (listedInputNodes[++i]) listedInputNodes[i].firstElementChild.observeCodes(mutatedCodeNode);
+	addInputButton.addEventListener('click', pressedAddMatchButton),
 	
 	// すべて保存ボタン
 	i = -1;
@@ -86,13 +44,90 @@ xLoad = localStorage => {
 	addEventListener('saved-unchanged-all', apply),
 	addEventListener('refreshed', apply),
 	
+	browser.storage.local.get(null).then(xLoad);
+	
+},
+xLoad = localStorage => {
+	
+	// 保存データの展開処理
+	
+	let usesPresetData;
+	
+	// ローカルストレージの正規化
+	localStorage.indices && typeof localStorage.indices === 'object' && Object.assign(indices, localStorage.indices),
+	storage.indices = indices;
+	
+	((localStorage.data && Array.isArray(localStorage.data)) ||
+		usesPresetData || (usesPresetData = !!(localStorage.data = PRESET_DATA))),
+	storage.data = Object.assign(data, localStorage.data),
+	
+	log(storage),
+	
+	open(),
+	
 	// ローカルストレージが存在しなかった場合、プリセットデータを読み込む。
 	// その際、初期化処理終了時に保存を行うが、これは恐らく入力フォームのコードデータを保存処理内で作成するためだと思われるがやや不確か。
 	usesPresetData && indexing();
 	
 },
+open = (src = data) => {
+	
+	const	listedInputNodes = [], hasIdx = indices.list && indices.list.length, indexedNodes = QQ('[data-index]');
+	
+	let i,i0, datum, inputNode;
+	
+	inputContainerObserver.observe(inputContainer, inputContainerObserveInit),
+	
+	// エディターコンテナに対するエディターの追加、削除時に処理の登録
+	editorNodesContainerObserver.observe(editorNodesContainer, editorNodesContainerObserveInit),
+	
+	// ローカルストレージに保存されていたデータに基づいて入力フォームを配置する。
+	i = -1;
+	while (datum = src[++i]) (i0 = hasIdx ? indices.list.indexOf(datum.uid) : i) === -1 ||
+		(
+			listedInputNodes[i0] = createListedInputNode(datum.uid, datum.match, addInputButton.dataset.selectorName),
+			datum.checked && (Q('input[type="radio"]', inputNode = listedInputNodes[i0]).checked = true)
+		);
+	inputContainer.append(...listedInputNodes),
+	inputNode &&	(
+							editorNodesContainer.dataset.index = inputNode.firstElementChild.id,
+							editorNodesContainer.append(...createEditorNodes(inputNode.firstElementChild))
+						),
+	
+	// インデックス対象のコンテナーに MutationObserver を登録。
+	i = -1;
+	while (indexedNodes[++i]) indexer.observe(indexedNodes[i], indexerInit);
+	
+	// 現在の入力フォーム内のコードデータに MutationObserver を登録。
+	i = -1;
+	while (listedInputNodes[++i]) listedInputNodes[i].firstElementChild.observeCodes(mutatedCodeNode);
+	
+	dispatchEvent(new CustomEvent('opened', { detail: src }));
+	
+},
+clear = () => indexing().then(xClear),
+xClear = () => {
+	
+	const listedInputNodes = inputContainer.children, editorNodes = editorNodesContainer.children;
+	
+	let i;
+	
+	indexer.disconnect(),
+	
+	i = -1, inputContainerObserver.disconnect();
+	while (listedInputNodes[++i]) Q('input-node', listedInputNodes[i]).destroy(true);
+	inputContainer.replaceChildren();
+	
+	i = -1;
+	while (editorNodes[++i]) editorNodes[i].destroy(true);
+	editorNodesContainer.replaceChildren();
+	
+	dispatchEvent(new CustomEvent('cleared'));
+	
+},
 
-clear = () => localStorage.clear().then(() => location.reload()),
+
+initialize = () => localStorage.clear().then(() => location.reload()),
 pressedSaveAll = event => {
 	
 	const editorNodes = editorNodesContainer.children;
@@ -120,7 +155,7 @@ savedAll = () => {
 	
 },
 apply = () => {
-	hi(storage);
+	log('Notify a change for data.', storage);
 	browser.runtime.sendMessage(storage);
 	
 },
@@ -135,7 +170,7 @@ saveEditorNodes = event => {
 */
 
 // エディターコンテナーが空になった際、エディター追加ボタンを不活性化する MutationObserber のコールバック関数
-inputContainerObserver = () => editorAddButton.disabled = !inputContainer.children.length,
+mutatedInputContainer = () => editorAddButton.disabled = !inputContainer.children.length,
 
 // <li> に入れた inputNode と radioNode を作成する。
 createListedInputNode = (id = uid(), match = PRESET_MATCH, radioName = 'input') => {
@@ -396,7 +431,7 @@ pressedEditorNodeDelButton = event => {
 	
 },
 pressedEditorNodeMoveButton = event => {
-	hi(event.detail);
+	
 	const	editorNode = event.target,
 			isUp = event.detail.classList.contains('up'),
 			sibling = editorNode[isUp ? 'previousSibling' : 'nextSibling'];
@@ -442,13 +477,35 @@ removeEditorNode = (editorNode, removesFor = false) => {
 
 mutatedEditorNodesContainer = (mr, mo) => {
 	
+	const editorNodes = editorNodesContainer.children;
+	
 	let i, savefor, editorNode;
 	
-	i = -1, savefor = [], editorNodes = editorNodesContainer.children;
-	while (editorNode = editorNodes[++i]) savefor.includes(editorNode.id) || (savefor[savefor.length] = editorNode.id);
-	
-	i = -1, savefor = savefor.join(' ');
-	while (saveButtons[++i]) saveButtons[i].dataset.saveFor = savefor;
+	if (editorNodes.length) {
+		
+		if (editorAddButton.disabled) {
+			
+			editorAddButton.disabled = false,
+			
+			i = -1;
+			while (saveButtons[++i]) saveButtons[i].disabled = false;
+			
+		}
+		
+		i = -1, savefor = [];
+		while (editorNode = editorNodes[++i]) savefor.includes(editorNode.id) || (savefor[savefor.length] = editorNode.id);
+		
+		i = -1, savefor = savefor.join(' ');
+		while (saveButtons[++i]) saveButtons[i].dataset.saveFor = savefor;
+		
+	} else {
+		
+		editorAddButton.disabled = true,
+		
+		i = -1;
+		while (saveButtons[++i]) saveButtons[i].disabled = true;
+		
+	}
 	
 },
 
@@ -617,24 +674,6 @@ save = (datumId, isSave = true) => {
 	return result;
 	
 },
-/*
-save = datumId => {
-	
-	const	datum = getDatumById(datumId) || (data[data.length] = {}),
-			codes = datum.codes || (datum.codes = []),
-			inputNode = document.getElementById(datumId),
-			codeNodes = inputNode.codes.children;
-	
-	let i, code, codeNode;
-	
-	i = -1, datum.id = datumId, datum.match = inputNode.value;
-	while (codeNode = codeNodes[++i]) codes[i] = storeCode(codeNode, codes[i] || {});
-	codes.length = i;
-	
-	localStorage.set({ data }).then(() => inputNode.dispatch('saved', null));
-	
-},
-*/
 saveUnchangedCodeAll = () => {
 	
 	const listedInputNodes = inputContainer.children;
@@ -666,14 +705,6 @@ saveUnchangedCodeAll = () => {
 			Array.isArray(datum.codes) && (datum.codes.length = 0);
 			
 		}
-		/*
-		i0 = -1;
-		while (code = codes[++i0]) {
-			i1 = -1;
-			while ((codeNode = codeNodes[++i1]) && codeNode.id !== code.id);
-			codeNode || codes.splice(i0--,1);
-		}
-		*/
 		
 	}
 	(result = localStorage.set({ data })).then(xSavedUnchanged);
@@ -719,22 +750,22 @@ observedIndexing = (mr,mo) => {
 	let i,i0,$,$$, index;
 	
 	i = -1;
-	while (mr[++i]) (target = mr[i].target).dataset.index === '-' ||
-		targets.includes(target = mr[i].target) || createIndex(target, INDICES);
+	while (mr[++i]) (target = mr[i].target).dataset.index === '-' || targets.includes(target) ||
+		createIndex(targets[targets.length] = target, INDICES);
 	
-	saveIndex(INDICES, indices);
+	targets.length && saveIndex(INDICES, indices);
 	
 },
 indexing = () => {
 	
 	const targets = QQ('[data-index]'), INDICES = {};
 	
-	let i;
+	let i,indexes;
 	
 	i = -1;
-	while (targets[++i]) targets[i].dataset.index === '-' || createIndex(targets[i], INDICES);
+	while (targets[++i]) targets[i].dataset.index === '-' || createIndex(indexes = targets[i], INDICES);
 	
-	saveIndex(INDICES, indices);
+	return indexes ? saveIndex(INDICES, indices) : new Promise(rs => rs());
 	
 },
 createIndex = (node, indices = {}) => {
@@ -753,7 +784,7 @@ createIndex = (node, indices = {}) => {
 },
 saveIndex = (currentIndices, indices = indices) => {
 	
-	let i,l,k, index,I,L, saves;
+	let i,l,k, index,I,L, saves, result;
 	
 	for (k in currentIndices) {
 		i = -1, currentIndex = currentIndices[k], l = (index = indices[k] || (indices[k] = [])).length;
@@ -761,8 +792,10 @@ saveIndex = (currentIndices, indices = indices) => {
 		L === -1 || (indices[k].length = i) === l || (L = -1);
 	}
 	
-	L === -1 ?	localStorage.set({ indices }).then(saveUnchangedCodeAll).then(xIndexed) :
-					saves && localStorage.set({ indices }).then(xIndexed);
+	L === -1 ?	(result = localStorage.set({ indices }).then(saveUnchangedCodeAll)).then(xIndexed) :
+					saves ? (result = localStorage.set({ indices })).then(xIndexed) : (result = new Promise(rs=>rs()));
+	
+	return result;
 	
 },
 xIndexed = () => {
@@ -795,13 +828,22 @@ getCurrentDatum = () => {
 	while (datum = data[++i]) datum.checked && (currentData[currentData.length] = datum);
 	return currentData;
 },
+
+addInputButton = Q('#matches > button.add'),
 inputContainer = Q('#list'),
 editorAddButton = Q('#editors button.add'),
 editorsContainer = Q('#editors'),
 editorNodesContainer = Q('#editor-nodes'),
 saveButtons = QQ('.save-all'),
+
+inputContainerObserver = new MutationObserver(mutatedInputContainer),
+inputContainerObserveInit = { childList: true },
+editorNodesContainerObserver = new MutationObserver(mutatedEditorNodesContainer),
+editorNodesContainerObserveInit = { childList: true },
+
 indexer = new MutationObserver(observedIndexing),
 indexerInit = { childList: true },
+
 //PRESET_MATCH = 'https?://(?:.*\\.)?example\\.(?:com|net|org)(?:/.*?)?',
 PRESET_MATCH = '*://*.example.com/*',
 PRESET_DATA= [
@@ -815,14 +857,21 @@ PRESET_DATA= [
 meta = {
 	css: { node: 'style', parent: 'head' },
 	js: { node: 'script', parent: 'body' }
-};
+},
+
+log = createLog('OU'),
+msg = createMsg('OU'),
+onMessage = createOnMessage('OU');
 
 removeEventListener('load', init),
 Q('title').textContent += ' | ' + browser.runtime.getManifest().name,
-browser.storage.local.get(null).then(xLoad);
+browser.runtime.onMessage.addListener(onMessage),
+
+init();
+
 
 };
 
-addEventListener('load', init);
+addEventListener('load', boot);
 
 })();
