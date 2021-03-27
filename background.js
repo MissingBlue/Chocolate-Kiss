@@ -8,6 +8,7 @@ msg = createMsg('BG'),
 INPUT_KEYS = [ 'match', 'allFrames', 'runAt' ],
 CODE_KEYS = [ '$', 'type' ],
 registry = {},
+unregistry = {},
 
 // options_ui からメッセージを受信した際に実行されるコールバック関数。
 changed = storage => {
@@ -39,11 +40,11 @@ registerData = data => {
 	for (k in registry) {
 		i = -1;
 		while ((datum = data[++i]) && datum.uid !== k);
-		datum || registry[k].$ &&
+		datum || unregistry[k] &&
 			(
-				registry[k].$.unregister(),
+				unregistry[k].unregister(),
 				msg([ 'A registered data was deleted for mismatch with storage data.', registry[k] ]),
-				delete registry[k]
+				delete registry[k], unregistry[k]
 			);
 	}
 	
@@ -51,10 +52,10 @@ registerData = data => {
 	while (datum = data[++i]) {
 		
 		// registry 内に datum.uid に一致するプロパティが存在する場合、既にスクリプトが登録されているか検証する。
-		if (datum.uid in registry && (reg = registry[datum.uid]).$) {
+		if (datum.uid in registry && unregistry[datum.uid]) {
 			
 			// 送られてきた datum と registry に登録済みの datum の値の一致を確認する。
-			i0 = -1, regDatum = reg.datum;
+			i0 = -1, regDatum = (reg = registry[datum.uid]).datum;
 			while ((k = INPUT_KEYS[++i0]) && datum[k] === regDatum[k]);
 			
 			if (!k) {
@@ -86,13 +87,13 @@ registerData = data => {
 				
 			}
 			
-			reg.$.unregister();
+			unregistry[datum.uid].unregister();
 			
 		} else reg = registry[datum.uid] = {};
 		
 		// 送られてきたデータ内にプロパティ match が存在しない場合、registry からデータを削除した上で登録を中止する。
 		if (!(registry[datum.uid].datum = datum).match) {
-			delete registry[datum.uid];
+			delete registry[datum.uid], delete unregistry[datum.uid],
 			msg([ 'A empty value for match exists. That data is ignored.', datum ]);
 			continue;
 		}
@@ -116,7 +117,7 @@ getXRegistered = (rd,reg) => {
 		const l = rd.datum.codes.length,
 				message = `A registration for ${unescape(rd.datum.match)} was succeeded. ${l > 1 ? `${l} codes` : 'A code'} will be run on ${rd.datum.allFrames ? 'all frames' : 'a content'} at ${rd.datum.runAt}.`;
 		
-		rd.$ = rcs, log(message, rd,reg), msg([ message, rd,reg ]);
+		unregistry[rd.datum.uid] = rcs, log(message, rd,reg), msg([ message, rd,reg ]);
 		
 	};
 	
@@ -125,12 +126,46 @@ getXRegistered = (rd,reg) => {
 },
 // browser_action ボタンを押した時に実行されるコールバック関数。
 // 現状はボタンを押すとそのまま options_ui に関連付けられたページを開く。
-pressedBrowserActionButton = () => browser.runtime.openOptionsPage();
+pressedBrowserActionButton = () => browser.runtime.openOptionsPage(),
+
+portCollection = {},
+connectedPort = port => {
+	
+	(portCollection[port.sender.id] = port).postMessage(true),
+	port.onMessage.addListener(onPortMessage);
+	
+},
+onPortMessage = (message, from) => {
+	
+	if (message && typeof message === 'object') {
+		
+		switch (message.type) {
+			
+			case 'fetch':
+			
+			typeof message.url === 'string' && message.url && typeof message.responseType === 'string' &&
+				fetch(message.url, message.init).then(
+						response =>	response[message.responseType]().
+											then(response => (message.response = response, from.postMessage(message)))
+					);
+			
+			break;
+			
+		}
+		
+	} else log(message, `@${port.sender.id}`);
+	
+	
+};
 
 // options_ui からのメッセージ受信の登録。
 browser.runtime.onMessage.addListener(changed),
 // browser_action ボタンを押した時のイベントの登録。
 browser.browserAction.onClicked.addListener(pressedBrowserActionButton),
+
+//coco
+// https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#connection-based_messaging
+browser.runtime.onConnect.addListener(connectedPort),
 
 browser.storage.local.get().then(init);
 

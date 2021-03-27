@@ -36,4 +36,9 @@ createOnMessage = (to, label = WX_SHORT_NAME) =>
 																console.log(`[${label}@${msg.from}]`, msg.detail)
 					),
 
-createMsg = from => (detail, to) => browser.runtime.sendMessage({ from, to, detail, __MSG__: true });
+createMsg = from => {
+	return (detail, to) => {
+		console.log(`#${from}`, `@${to}`, detail),
+		browser.runtime.sendMessage({ from, to, detail, __MSG__: true });
+	};
+};

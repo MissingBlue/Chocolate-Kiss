@@ -25,6 +25,11 @@ init = () => {
 	// クリアボタン
 	Q('#commands > button.clear').addEventListener('click', clear),
 	
+	inputContainerObserver.observe(inputContainer, inputContainerObserveInit),
+	
+	// エディターコンテナに対するエディターの追加、削除時に処理の登録
+	editorNodesContainerObserver.observe(editorNodesContainer, editorNodesContainerObserveInit),
+	
 	// エディター追加処理、ボタンに関するもの
 	editorAddButton.addEventListener('click', pressedAddEditorButton),
 	editorAddButton.disabled = true,
@@ -76,11 +81,6 @@ open = (src = data) => {
 	
 	let i,i0, datum, inputNode;
 	
-	inputContainerObserver.observe(inputContainer, inputContainerObserveInit),
-	
-	// エディターコンテナに対するエディターの追加、削除時に処理の登録
-	editorNodesContainerObserver.observe(editorNodesContainer, editorNodesContainerObserveInit),
-	
 	// ローカルストレージに保存されていたデータに基づいて入力フォームを配置する。
 	i = -1;
 	while (datum = src[++i]) (i0 = hasIdx ? indices.list.indexOf(datum.uid) : i) === -1 ||
@@ -114,7 +114,7 @@ xClear = () => {
 	
 	indexer.disconnect(),
 	
-	i = -1, inputContainerObserver.disconnect();
+	i = -1;
 	while (listedInputNodes[++i]) Q('input-node', listedInputNodes[i]).destroy(true);
 	inputContainer.replaceChildren();
 	
@@ -155,7 +155,9 @@ savedAll = () => {
 	
 },
 apply = () => {
+	
 	log('Notify a change for data.', storage);
+	
 	browser.runtime.sendMessage(storage);
 	
 },
@@ -170,7 +172,11 @@ saveEditorNodes = event => {
 */
 
 // エディターコンテナーが空になった際、エディター追加ボタンを不活性化する MutationObserber のコールバック関数
-mutatedInputContainer = () => editorAddButton.disabled = !inputContainer.children.length,
+mutatedInputContainer = () => {
+	
+	editorAddButton.disabled = !inputContainer.children.length;
+	
+},
 
 // <li> に入れた inputNode と radioNode を作成する。
 createListedInputNode = (id = uid(), match = PRESET_MATCH, radioName = 'input') => {
@@ -483,9 +489,7 @@ mutatedEditorNodesContainer = (mr, mo) => {
 	
 	if (editorNodes.length) {
 		
-		if (editorAddButton.disabled) {
-			
-			editorAddButton.disabled = false,
+		if (saveButtons[0].disabled) {
 			
 			i = -1;
 			while (saveButtons[++i]) saveButtons[i].disabled = false;
@@ -499,8 +503,6 @@ mutatedEditorNodesContainer = (mr, mo) => {
 		while (saveButtons[++i]) saveButtons[i].dataset.saveFor = savefor;
 		
 	} else {
-		
-		editorAddButton.disabled = true,
 		
 		i = -1;
 		while (saveButtons[++i]) saveButtons[i].disabled = true;
@@ -861,7 +863,39 @@ meta = {
 
 log = createLog('OU'),
 msg = createMsg('OU'),
-onMessage = createOnMessage('OU');
+onMessage = createOnMessage('OU'),
+// 以下の port 関連の関数や処理はテスト用のもので、options_ui には不要。
+// ただし content scripts 上でスニペット的に用いるため削除してはならない。
+port = browser.runtime.connect({ name: 'OU' }),
+onPortMessage = (message, from) => {
+	
+	if (message && typeof message === 'object') {
+		
+		switch (message.type) {
+			
+			case 'fetch':
+			
+			const requestNodes = QQ(`${message.selector}`), detail = { detail: message.response };
+			
+			let i;
+			
+			i = -1, dispatchEvent(new CustomEvent('fetched', detail));
+			while (requestNodes[++i]) requestNodes[i].dispatchEvent(new CustomEvent('fetched', detail));
+			
+			break;
+			
+		}
+		
+	} else if (message === true) {
+		
+		port.postMessage({ type: 'fetch', url: 'https://raw.githubusercontent.com/MissingBlue/Chocolate-Kiss/main/icon.png', responseType: 'arrayBuffer' });
+		
+	} else log(message, `${from.sender ? from.sender.id : 'unknown'}`);
+	
+};
+
+port.onMessage.addListener(onPortMessage),
+addEventListener('fetched', event => hi(event)),
 
 removeEventListener('load', init),
 Q('title').textContent += ' | ' + browser.runtime.getManifest().name,
