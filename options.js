@@ -700,7 +700,20 @@ saveUnchangedCodeAll = () => {
 			}
 			
 			i0 = -1;
-			while (code = codes[++i0]) document.getElementById(code.id) || (codes.splice(i0--,1));
+			while (code = codes[++i0]) inputNode.q(`.${code.id}`) || codes.splice(i0--,1);
+			
+			// 2021-0411
+			// 主として初期化含む初回読み込み時に inputNode 追加ボタンを押したあとにページを再読み込みすると
+			// 追加した以外の inputNode のコードがすべて消去される。
+			// これはこの関数を通じた保存処理特有の問題と思われ、上記状況以外では保存にこの関数を用いないため露見しない。
+			// 以下の while 文で getElementById を用いて、対象の inputNode のコード記録用の要素の取得を試みるが、
+			// コードの id はエディター要素にしか指定されない。
+			// そのため、現在選択状態の inputNode、つまりこの場合は追加した新規 inputNode 以外のコード記録用の要素はそもそも存在しないため、
+			// 選択状態以外の inputNode のコード要素そのものが存在しないものとして扱われ、data 上から消去されてしまう。
+			// そのため、コードの id からエディターを取得するのではなく、inputNode 内のコード記録用要素を直接取得するように変更した。
+			// この変更は現状機能しているように見えるが、ほぼ未検証状態で妥当なものかは不明。
+			//i0 = -1;
+			//while (code = codes[++i0]) document.getElementById(code.id) || (codes.splice(i0--,1));
 			
 		} else {
 			
